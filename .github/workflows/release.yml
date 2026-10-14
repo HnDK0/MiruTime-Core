@@ -21,7 +21,10 @@ jobs:
           distribution: temurin
           # Matches jitpack.yml (openjdk17); the lib targets JVM 17 bytecode.
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
+        # v4 drops the long-dead `tools` SDK package from its default `packages`
+        # (Google removed it from the repo ~Sep 2026; v3 fails the whole job
+        # with "Failed to find package 'tools'" before Gradle even starts).
       - name: Verify JVM tests and assemble Android AAR + JVM JAR
         run: ./gradlew :mirutime-core:jvmTest :mirutime-core:jvmJar :mirutime-core:assembleAndroidMain
       - name: Upload AAR and JVM JAR
