@@ -1,3 +1,5 @@
+> English: [README_EN.md](./README_EN.md)
+
 # MiruTime-Core
 
 Ядро MiruTime: KMP-библиотека Lua-плагинов и сети. Библиотека собирается
@@ -11,9 +13,7 @@ standalone и подключается **AAR-артефактом**: `mavenLocal
 | `:mirutime-core` | KMP-библиотека (`commonMain` + `jvmSharedMain` + `androidMain`/`jvmMain`), таргеты `android` и `jvm` | да |
 
 Корневой Gradle-проект: `rootProject.name = "MiruTime-Core"`,
-`include(":mirutime-core")`. Модуль `:plugin-tester` из этого репо **вынесен**:
-отдельный репозиторий `../mirutime-plugin-tester`, потребляет либу
-опубликованным артефактом (§4b, §6).
+`include(":mirutime-core")` (тул — в соседнем `../mirutime-plugin-tester`, §6).
 
 ---
 
@@ -125,9 +125,14 @@ getBookStatus/getBookLastUpdate/getBookAuthor` (+ legacy-фолбэк `getBookMe
 | HTML (`HtmlBindings`, Ksoup) | `html_parse`, `html_select`, `html_select_first`, `html_text`, `html_attr`, `html_html`, `html_outerHtml`, `html_absUrl`, `html_remove` + методы узла `get_text/get_html/attr/select/remove` |
 | Regex/строки (`StringBindings`) | `regex_match`, `regex_replace`, `string_normalize`, `string_split`, `string_trim`, `string_starts_with`, `string_ends_with`, `string_clean`, `unescape_unicode` |
 | JSON (`JsonBindings`) | `json_parse`, `json_stringify` |
-| Крипто/кодеки (`CryptoBindings`) | `sha256`, `md5`, `hmac_sha256`, `aes_decrypt`, `aes_gcm_decrypt`, `rc4`, `pbkdf2`, `base64_encode`, `base64_decode_bytes`, `inflate`, `unpack_packed`, `json_encode` |
+| Крипто/кодеки (`CryptoBindings`) | `sha256`, `sha1`, `md5`, `crc32`, `hmac_sha256`, `aes_decrypt`, `aes_ctr`, `aes_gcm_decrypt`, `rsa_decrypt`, `ecdsa_sign_p256`, `rc4`, `pbkdf2`, `base64_encode`, `base64_decode_bytes`, `inflate`, `unpack_packed`, `json_encode` |
 | Хранилище/хост (`StorageBindings`) | `get_cookies`, `set_cookies`, `get_localStorage`, `set_localStorage`, `get_preference`, `set_preference`, `show_error` |
 | Служебные | `log_info`, `log_error` (`LogBindings`), `os_time` (`OsBindings`), `detect_pagination`, `get_user_agent`, `base64_decode` (`MiscBindings`), `pow_solve` (`PowSolver`), `url_encode`, `url_encode_charset`, `url_resolve` (`UrlBindings`), `require_lib` (`LibraryLoader`) |
+
+Семантика (паритет NoveLA): `json_parse` битой строки → `nil`,
+`json_encode(nil)` → ошибка; `regex_match` → 1-based массив полных
+совпадений, пустая таблица при отсутствии; `aes_decrypt(b64, key, iv)`,
+`aes_gcm_decrypt(key, iv, ct, tag)`.
 
 Формат ответа HTTP в Lua (паритет NoveLA): `{ success, code, status, charset,
 headers, body }`; ошибка моста — `{ success=false, code=-1, body, error,
@@ -136,14 +141,16 @@ ResponseTooLarge | Timeout | Network`. `http_get_batch` — `maxConcurrent`
 1..32 (дефолт 4), `binary=true` отдаёт тело массивом байт.
 
 **Песочница** (`Sandbox.kt`): вырезаны `luajava`, `io`, `load`, `loadfile`,
-`loadstring`, `dofile`, `require`, `package`, `debug`, `coroutine`; `os`
-обрезан до `time`/`date`. `LuaValue`/`LuaTable` наружу не выходят — на границе
+`loadstring`, `dofile`, `require`, `package`, `debug`; `os` обрезан до
+`time`/`date`/`clock`/`difftime` (паритет NoveLA, `coroutine` доступен). `LuaValue`/`LuaTable` наружу не выходят — на границе
 `LuaArg`/`LuaData`. Сессия однопоточная: адаптер сериализует вызовы мьютексом и
 прыгает в `Dispatchers.IO` (сетевой мост внутри LuaJ использует `runBlocking`).
 
-`require_lib(id [, sha])`: инстанс таблицы на сессию, `__index` метатаблицы
-смотрит в globals текущей сессии, кеш скомпилированного байткода ключуется по
-sha256 файла (смена либы инвалидирует кеш), переданный sha проверяется.
+`require_lib(id [, sha])`: process-wide мемо скомпилированных либ (ключ —
+content-sha256, смена либы инвалидирует кеш, максимум 64 записи; опциональный
+`sha` проверяется), каждый вызов исполняет свежую таблицу в globals вызывающей
+сессии (`__index` — на свою сессию). Изменяемое состояние либы между плагинами
+не шарится (осознанное отклонение от NoveLA ради потокобезопасности).
 
 **Мультиязычность плагинов**: `metadata.language` (дефолт `en`, читается из
 глобала скрипта), `Accept-Language` подставляется из `SystemInfo.acceptLanguage`
@@ -200,7 +207,8 @@ sha256 файла (смена либы инвалидирует кеш), пер�
   (`ssrfGuard = SsrfGuard(InetAddressHostResolver())`), выключается явно
   передачей `null` или своего guard'а.
 - Песочница Lua (см. §2.3), path-safe проверка `id` в инсталлере
-  (`[A-Za-z0-9_.-]+`, `..`/`.` запрещены), `require_lib` — `[a-z0-9_]+`.
+  (`[A-Za-z0-9_.-]+`, запрещён `..`; одиночные точки легальны: `mvlempyr.com`),
+  `require_lib` — `[a-z0-9_]+`.
   Сознательно строже NoveLA (`isValidExtensionId` там режет только `/`, `\`,
   `..`): весь корпус (93 id индекса + все `id` скриптов, включая
   `mvlempyr.com`, `bad-fixture`, `NovelArrow`) проходит наш паттерн, а более
@@ -210,8 +218,9 @@ sha256 файла (смена либы инвалидирует кеш), пер�
 
 ### 2.6 Cloudflare
 
-- `CloudflareDetector`: статусы `403/429/503` + маркеры тела (`Just a moment`,
-  `__cf_chl_`, turnstile, ddos-guard и др.), свои `whitelist`/`ignore_markers`/
+- `CloudflareDetector`: статусы `403/429/503` + маркеры тела (`__cf_chl_`,
+  turnstile, ddos-guard и др. — голой фразы `Just a moment` среди них нет
+  сознательно: она встречается в текстах книг), свои `whitelist`/`ignore_markers`/
   `trigger_markers` из глобала `cf_options` скрипта; статические ассеты по
   расширению (`STATIC_EXTENSIONS` NoveLA) — не челлендж; встроенный
   host-whitelist (`github.com`, `raw.githubusercontent.com`, `images.weserv.nl`,
@@ -227,8 +236,10 @@ sha256 файла (смена либы инвалидирует кеш), пер�
   в проде это WebView/handler на стороне приложения, в дев-тулсе — внешний
   процесс (см. §6). Хост обязан валидировать clearance живым запросом
   (паттерн NoveLA `probeIsClear`: кука сама по себе ничего не доказывает) —
-  WebView в core нет, проба — код хоста. После решения — один повтор запроса, полученные cookies
-  пишутся в `CookieStore`, эффективный UA браузера — в `HostOptionsRegistry`.
+WebView в core нет, проба — код хоста. После решения — повтор запроса; если
+челлендж остался — второй solve (максимум 2 на запрос, паритет NoveLA
+`MAX_MANUAL_ATTEMPTS`); полученные cookies пишутся в `CookieStore`,
+эффективный UA браузера — в `HostOptionsRegistry`.
 - `PluginMetadata.cfOptions`/`userAgentPreset` регистрируются в
   `HostOptionsRegistry` при `install` и снимаются при `dispose()`.
 
@@ -310,9 +321,6 @@ mirutime-core/src
 ├── jvmMain         # createEngine() = CIO,    currentTimeMillis() actual   → только JVM
 ├── commonTest      # тесты (не публикуются)
 └── jvmTest         # 430 тестов / 41 suites (не публикуются)
-
-plugin-tester/src   # CLI-тул: Main, TestRunner, Host (десктоп-реализации хост-контрактов),
-                    # CfSolver (python3) — ВЫНЕСЕН в ../mirutime-plugin-tester (см. §6)
 ```
 
 ---
@@ -407,26 +415,12 @@ JitPack: `jitpack.yml` запускает
 `maven("https://jitpack.io")` в `dependencyResolutionManagement` и пином на тег.
 Живой прогон через jitpack.io в этой сессии не выполнялся.
 
-**GitHub Action на теги** (рекомендуемый workflow — сниппет для документации,
-файла `.github/workflows/` в репо пока нет):
-
-```yaml
-name: publish-aar
-on:
-  push:
-    tags: ['v*']
-jobs:
-  release:
-    runs-on: ubuntu-latest          # в образе runner'а уже есть Android SDK
-    permissions: { contents: write } # нужен, чтобы положить файл в Release
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with: { distribution: temurin, java-version: '17' }
-      - run: ./gradlew :mirutime-core:bundleAndroidMainAar
-      - uses: softprops/action-gh-release@v2
-        with: { files: mirutime-core/build/outputs/aar/mirutime-core.aar }
-```
+**GitHub Action на теги** — реальный файл `.github/workflows/release.yml`
+(не сниппет): на пуш тега `v*` гоняет `jvmTest`, собирает AAR
+(`assembleAndroidMain`) и JVM-jar (`jvmJar`) с `-Pversion` из тега и сам
+создаёт GitHub Release с обоими артефактами
+(`softprops/action-gh-release`). JitPack дальше собирает тег по первому
+запросу потребителя.
 
 Ридер и тул `mirutime-plugin-tester` подключают единообразно: для JitPack —
 `implementation("com.github.<owner>:mirutime-core:<tag>")` (+ репозиторий
@@ -498,7 +492,7 @@ snakeyaml (`org.yaml.snakeyaml.**`), больше ничего. Правила �
 | `mirutime-plugin-tester` (классы, jar) | ❌ | ❌ | ✅ (своя сборка) | **❌ 0 байт** |
 | `mirutime-plugin-tester/cf_solve.py`, `.cf_cookies.json` | ❌ | ❌ | файлы рядом с рабочим каталогом | **❌ 0 байт** |
 | python3 / DrissionPage / Brave | ❌ | ❌ | внешний процесс дев-машины | **❌ 0 байт** |
-| `gradle/libs.versions.toml`, `jitpack.yml`, `docs/` | ❌ | ❌ | ❌ | ❌ (build-time only) |
+| `gradle/libs.versions.toml`, `jitpack.yml` | ❌ | ❌ | ❌ | ❌ (build-time only) |
 
 ### 5.2 Цифры (измерено в этой сессии, до R8)
 
@@ -581,7 +575,10 @@ Dev-тул **вынесен из этого репо** в отдельный п�
 (`application`, `mainClass = dev.mirutime.tester.MainKt`), использует **ту же**
 либу и тот же HTTP-стек, что и приложение (второго движка и второго клиента в
 нем нет), подключая её опубликованным артефактом
-`dev.mirutime:mirutime-core-jvm:0.1.0` из `mavenLocal()` (§4b). Формат вывода,
+`com.github.HnDK0.MiruTime-Core:mirutime-core-jvm:<версия>`: в деве —
+`main-SNAPSHOT` из `mavenLocal()` (после `publishToMavenLocal` с тем же
+`-Pversion`), в релизе — пин на тег; версия задана один раз в
+`gradle/libs.versions.toml` тестера (§4b). Формат вывода,
 секции и exit codes описаны ниже — тул не менялся при выносе, только способ
 подключения к либе.
 
@@ -618,7 +615,7 @@ cd /Users/mac/Documents/GitHub/mirutime-plugin-tester
 то есть сейчас это macOS-скрипт). Куки сохраняются в
 `mirutime-plugin-tester/.cf_cookies.json` вместе с UA, при следующем запуске UA
 воспроизводится (cf_clearance валиден только с тем же UA). Solver вызывается
-не более **один раз на хост за прогон**; при отсутствии скрипта/питона тул
+не более **двух раз на хост за прогон** (паритет NoveLA); при отсутствии скрипта/питона тул
 деградирует в `CfChallengeRequired` и продолжает работать. Ни один из этих
 файлов не попадает в библиотеку и в APK.
 
@@ -674,39 +671,16 @@ Android-задачи падают с `SDK location not found`, если не з�
 
 ## 8. Статус и открытые решения
 
-- **Extras + GET-memo доставлены.** `BookMeta.extras` (произвольные метаданные:
-  неизвестные ключи legacy `getBookMeta` + таблица опционального расширения
-  MiruTime `getBookExtras(url)`, в NoveLA отсутствует; известные ключи
-  отфильтровываются — extras никогда не переопределяют канонические поля) и
-  URL-мемо `http_get`, активный только на время агрегации геттеров внутри
-  `book()` (некэширующие плагины били в сайт ~7 раз на одну книгу — теперь
-  один раз; `http_post`/`http_get_batch` и вызовы вне `book()` не мемоизируются).
-- **`regex_match`: массив (решено).** Возвращает 1-based массив полных
-  совпадений (`m[1]`, `m[2]`, …), как NoveLA; нет совпадений или ошибка
-  регулярки → пустая таблица. Бывший boolean-«controller ruling»
-  (`containsMatchIn`) отменён по решению пользователя: в корпусе плагинов
-  **11 из 96** индексируют результат как массив (`m[1]` и т.п.), **0**
-  используют его как boolean.
-- **`plugin-tester` вынесен в `../mirutime-plugin-tester`** — отдельный
-  standalone-проект (свой `settings.gradle.kts`/`build.gradle.kts`, свой gradle
-  wrapper), подключает либу по §4b: координаты
-  `dev.mirutime:mirutime-core-jvm:0.1.0` из `mavenLocal()` (в деве) или
-  release-артефакта JitPack. `project(":mirutime-core")` между разными репо не
-  работает, поэтому обязательный шаг перед прогоном — `publishToMavenLocal` (§6).
-  Ядро при этом остаётся чистым: в `classes.jar` AAR нет ни одного класса
-  `dev.mirutime.tester`.
-- **Коммитов нет**: изменения в рабочем дереве не закоммичены
-  (`git status` — изменены `settings.gradle.kts`, `build.gradle.kts`,
-  `libs.versions.toml`, `mirutime-core/build.gradle.kts`, `PluginHttpClient`,
-  `LuaPluginSource`, `HtmlBindings`, `ScriptMetadataParser`, `README.md`, тесты;
-  добавлены `NetworkTraceEvent.kt`, `PluginHttpClientTraceTest.kt`,
-  `mirutime-core/consumer-rules.pro`; каталог `plugin-tester/` удалён из репо —
-  теперь это соседний репозиторий `../mirutime-plugin-tester`).
-- **Не проверено/не сделано:** живой прогон JitPack; работа с R8 full mode
-  (consumer-правила в AAR есть — §4/§5.3, но минифицированной сборкой ридера
-  не проверялись); iOS-таргет; распределение `includeBuild` между разными
-  ветками; `.github/workflows/` — сниппет workflow в §4 (b) только
-  документация, файла в репо нет.
+- Выпущен `v0.1.2` (GitHub Release с AAR + JVM-jar; JitPack раздаёт по тегу).
+  Тесты: 430 / 41 suites зелёных (`./gradlew :mirutime-core:jvmTest`).
+- Ключевые решения (паритет NoveLA, проверены корпусом из 96 плагинов):
+  `regex_match` — 1-based массив; `require_lib` — process-wide мемо прототипов,
+  таблицы на сессию; `json_parse` битого JSON — `nil`; `BookMeta.extras` +
+  `getBookExtras`; GET-мемо внутри `book()`; CF — до 2 solve, referer-страница
+  для `/api/`, чистка только `cf_clearance`, маркер `Just a moment` удалён
+  сознательно.
+- Не проверено: первый живой запрос потребителя к JitPack; R8 full mode на
+  реальной сборке ридера (consumer-правила в AAR есть — §4/§5.3); iOS-таргет.
 
 ---
 
