@@ -26,7 +26,9 @@ jobs:
         # (Google removed it from the repo ~Sep 2026; v3 fails the whole job
         # with "Failed to find package 'tools'" before Gradle even starts).
       - name: Verify JVM tests and assemble Android AAR + JVM JAR
-        run: ./gradlew :mirutime-core:jvmTest :mirutime-core:jvmJar :mirutime-core:assembleAndroidMain
+        # Version comes from the tag (v0.1.2 → 0.1.2) so artifact filenames
+        # match the release; build.gradle.kts reads -Pversion (else 0.1.0).
+        run: ./gradlew :mirutime-core:jvmTest :mirutime-core:jvmJar :mirutime-core:assembleAndroidMain -Pversion="${GITHUB_REF_NAME#v}"
       - name: Upload AAR and JVM JAR
         uses: actions/upload-artifact@v4
         with:
@@ -35,7 +37,9 @@ jobs:
             mirutime-core/build/outputs/aar/*.aar
             mirutime-core/build/libs/*-jvm-*.jar
       - name: Create GitHub Release with AAR and JVM JAR
-        uses: softprops/action-gh-release@v2
+        # v3 = Node 24 runtime line (matches the runner); v2 is Node 20 and
+        # fails post-upload on Node 24 runners with "Error creating policy".
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: |
