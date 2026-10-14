@@ -707,3 +707,9 @@ Android-задачи падают с `SDK location not found`, если не з�
   не проверялись); iOS-таргет; распределение `includeBuild` между разными
   ветками; `.github/workflows/` — сниппет workflow в §4 (b) только
   документация, файла в репо нет.
+
+---
+
+## 9. Лицензия
+
+GPL-3.0-or-later © 2026 HnDK0, см. LICENSE.
