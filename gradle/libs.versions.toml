@@ -1,0 +1,41 @@
+[versions]
+
+kotlin = "2.4.20"
+
+plugin-agp = "9.4.0"
+
+kotlinx-coroutines-core = "1.9.0"
+kotlinx-coroutines-test = "1.11.0"
+kotlinx-serialization-json = "1.11.0"
+
+ktor = "3.6.0"
+
+ksoup = "0.2.6"
+luaj-jse = "3.0.1"
+okio = "3.18.2"
+snakeyaml = "2.7"
+brotli-dec = "0.1.2"
+
+[libraries]
+
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines-core" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization-json" }
+
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
+ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
+
+ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
+luaj-jse = { module = "org.luaj:luaj-jse", version.ref = "luaj-jse" }
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+snakeyaml = { module = "org.yaml:snakeyaml", version.ref = "snakeyaml" }
+brotli-dec = { module = "org.brotli:dec", version.ref = "brotli-dec" }
+
+[plugins]
+
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "plugin-agp" }

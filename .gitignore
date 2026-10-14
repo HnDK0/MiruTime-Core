@@ -1,0 +1,11 @@
+.gradle/
+.kotlin/
+build/
+local.properties
+.DS_Store
+/.idea
+*.iml
+.cf_cookies.json
+results/
+*.log
+gradle/gradle-daemon-jvm.properties

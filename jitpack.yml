@@ -1,0 +1,4 @@
+jdk:
+  - openjdk17
+install:
+  - ./gradlew :mirutime-core:publishToMavenLocal -Pgroup=$GROUP -Pversion=$VERSION
