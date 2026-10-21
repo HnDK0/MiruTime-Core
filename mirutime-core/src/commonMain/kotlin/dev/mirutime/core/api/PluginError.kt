@@ -1,6 +1,9 @@
 package dev.mirutime.core.api
 
-sealed class PluginError {
+/** Base type for typed failures returned through [Outcome.Err]. */
+interface MiruError
+
+sealed class PluginError : MiruError {
     data class UserMessage(
         val title: String,
         val message: String,

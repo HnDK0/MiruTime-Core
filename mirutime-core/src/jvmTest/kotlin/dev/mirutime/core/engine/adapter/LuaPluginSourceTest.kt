@@ -85,7 +85,7 @@ class LuaPluginSourceTest {
         factory().create(PluginDescriptor(meta, script))
 
     private fun <T> Outcome<T>.ok(): T = (this as Outcome.Ok).value
-    private fun <T> Outcome<T>.err(): dev.mirutime.core.api.PluginError =
+    private fun <T> Outcome<T>.err(): dev.mirutime.core.api.MiruError =
         (this as Outcome.Err).error
 
     // ── chapters: adapter never reorders ─────────────────────────────────────

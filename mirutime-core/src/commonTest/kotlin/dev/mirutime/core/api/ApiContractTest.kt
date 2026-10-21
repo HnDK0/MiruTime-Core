@@ -100,6 +100,16 @@ class ApiContractTest {
         assertEquals("down", e)
     }
 
+    @Test
+    fun outcomeErrAcceptsCustomMiruError() {
+        val err: Outcome<Int> = Outcome.Err(TestError(429))
+        val error = (err as Outcome.Err).error
+        assertTrue(error is TestError)
+        assertEquals(429, (error as TestError).code)
+    }
+
+    private data class TestError(val code: Int) : MiruError
+
     // --- PluginSource shape (compile-time contract; metadata + suspend signatures) ---
     @Test
     fun pluginSourceMetadataType() {
