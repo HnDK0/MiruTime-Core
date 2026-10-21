@@ -11,6 +11,7 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import java.io.IOException
 import kotlin.test.Test
@@ -113,8 +114,11 @@ class PluginHttpClientResilienceTest {
 
     // NoveLA BudgetedCall: an explicit timeoutMs means exactly ONE attempt —
     // retries must not multiply the caller's budget.
+    // runBlocking, not runTest: a pending withTimeout under runTest gives the
+    // virtual scheduler a timer to fast-forward to, so the call can expire
+    // before the engine ever runs (calls == 0) on a loaded CI machine.
     @Test
-    fun budgetedCallIsSingleAttempt() = runTest {
+    fun budgetedCallIsSingleAttempt() = runBlocking {
         var calls = 0
         val engine = MockEngine {
             calls++
